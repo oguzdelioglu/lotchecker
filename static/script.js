@@ -62,9 +62,9 @@ document.addEventListener('DOMContentLoaded', function() {
             dataTable.destroy();
         }
 
-        const priorityColumns = ['ticker', 'fiyat', 'fiyat_puan', 'pd_dd_puan'];
+        const priorityColumns = ['ticker', 'fiyat', 'defter_deger', 'fiyat_puan', 'pd_dd_puan', 'dusuk52', 'yuksek52', 'ort50', 'ort200', 'hacim10gun', 'hacim3ay'];
         const reorderedColumns = [
-            ...priorityColumns,
+            ...priorityColumns.filter(col => data.columns.includes(col)),
             ...data.columns.filter(col => !priorityColumns.includes(col))
         ];
 
@@ -75,7 +75,21 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             render: function(data, type, row, meta) {
                 if (type === 'display') {
-                    if (column === 'fiyat_puan' || column === 'pd_dd_puan') {
+                    const fiyat = parseFloat(row['fiyat']);
+                    const defterDeger = parseFloat(row['defter_deger']);
+
+                    if (column === 'fiyat' && !isNaN(fiyat) && !isNaN(defterDeger)) {
+                        const ratio = fiyat / defterDeger;
+                        const color = getColorForRatio(ratio, 1);
+                        return `<span style="color: ${color}">${fiyat.toFixed(2)}</span>`;
+                    } else if (['dusuk52', 'yuksek52', 'ort50', 'ort200'].includes(column)) {
+                        const columnValue = parseFloat(data);
+                        if (!isNaN(fiyat) && !isNaN(columnValue)) {
+                            const ratio = fiyat / columnValue;
+                            const color = getColorForRatio(ratio, 1);
+                            return `<span style="color: ${color}">${columnValue.toFixed(2)}</span>`;
+                        }
+                    } else if (column === 'fiyat_puan' || column === 'pd_dd_puan') {
                         const value = parseFloat(data);
                         if (!isNaN(value)) {
                             const color = getColorForValue(value);
@@ -91,8 +105,17 @@ document.addEventListener('DOMContentLoaded', function() {
             data: data.stocks,
             columns: columns,
             order: [],
-            pageLength: 25
+            pageLength: 25,
+            dom: 'Bfrtip',
+            buttons: [
+                'copy', 'csv', 'excel', 'pdf', 'print'
+            ]
         });
+    }
+
+    function getColorForRatio(ratio, targetRatio) {
+        const hue = 120 - 120 * Math.min(Math.max((ratio - targetRatio) / targetRatio, -1), 1);
+        return `hsl(${hue}, 100%, 50%)`;
     }
 
     function getColorForValue(value) {
