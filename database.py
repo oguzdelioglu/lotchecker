@@ -23,13 +23,15 @@ data_fields = {
     'kar_marji': 'profitMargins',
     'favok': 'ebitda',
     'piyasa_deger': 'marketCap',
-    'defter_deger': 'bookValue'
+    'defter_deger': 'bookValue',
+    'hisse_basina_kazanc': 'trailingEps'  # Hisse başına kazanç için yeni alan
 }
 
 signal_fields = {
     'fiyat_puan': 'Price Status',
     'pd_dd_puan': 'Book Value Rating',
-    'pd_dd': 'Price to Book Ratio'
+    'pd_dd': 'Price to Book Ratio',
+    'fk_orani': 'Price to Earnings Ratio'  # F/K oranı için yeni alan
 }
 
 def get_db_connection():
@@ -93,6 +95,11 @@ def calculate_ebitda(data):
         return data['favok']
     return None
 
+def calculate_price_to_earnings_ratio(fiyat, hisse_basina_kazanc):
+    if None in (fiyat, hisse_basina_kazanc) or hisse_basina_kazanc == 0:
+        return None
+    return fiyat / hisse_basina_kazanc
+
 def update_signals_for_all_stocks():
     conn = get_db_connection()
     c = conn.cursor()
@@ -121,11 +128,16 @@ def update_signals_for_all_stocks():
 
         favok = calculate_ebitda(stock_data)
 
+        fk_orani = calculate_price_to_earnings_ratio(
+            stock_data.get('fiyat'),
+            stock_data.get('hisse_basina_kazanc')
+        )
+
         c.execute('''
             UPDATE stocks
-            SET fiyat_puan = ?, pd_dd = ?, pd_dd_puan = ?, favok = ?
+            SET fiyat_puan = ?, pd_dd = ?, pd_dd_puan = ?, favok = ?, fk_orani = ?
             WHERE ticker = ?
-        ''', (fiyat_puan, pd_dd, pd_dd_puan, favok, ticker))
+        ''', (fiyat_puan, pd_dd, pd_dd_puan, favok, fk_orani, ticker))
 
     conn.commit()
     conn.close()
@@ -151,9 +163,15 @@ def insert_or_update_stock_data(ticker, data):
 
     favok = calculate_ebitda(data)
 
+    fk_orani = calculate_price_to_earnings_ratio(
+        data.get('fiyat'),
+        data.get('hisse_basina_kazanc')
+    )
+
     data['fiyat_puan'] = fiyat_puan
     data['pd_dd'] = pd_dd
     data['pd_dd_puan'] = pd_dd_puan
+    data['fk_orani'] = fk_orani
     if favok is not None:
         data['favok'] = favok
 
@@ -204,6 +222,11 @@ def filter_stocks(filters):
         min_book_value_rating, max_book_value_rating = map(int, filters['pd_dd_puan'].split(','))
         query += " AND pd_dd_puan >= ? AND pd_dd_puan <= ?"
         params.extend([min_book_value_rating, max_book_value_rating])
+    
+    if 'fk_orani' in filters and filters['fk_orani'] != 'all':
+        min_fk_orani, max_fk_orani = map(float, filters['fk_orani'].split(','))
+        query += " AND fk_orani >= ? AND fk_orani <= ?"
+        params.extend([min_fk_orani, max_fk_orani])
     
     c.execute(query, params)
     data = c.fetchall()

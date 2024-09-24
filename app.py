@@ -1,36 +1,21 @@
-
-from flask import Flask, redirect, render_template, jsonify,request, url_for
+from flask import Flask, redirect, render_template, jsonify, request, url_for
 import yfinance as yf
-from database import filter_stocks, get_all_stocks, init_db, data_fields, insert_or_update_stock_data, update_signals_for_all_stocks  # data_fields'ı import edin
+from database import filter_stocks, get_all_stocks, init_db, data_fields, insert_or_update_stock_data, update_signals_for_all_stocks
 from config import bist_tickers
 
 app = Flask(__name__)
 
-
 def fetch_stock_data():
-    # bist_tickers = ['AKBNK.IS', 'GARAN.IS', 'ISCTR.IS']  # BIST hisselerini buraya ekle
-    
-     # BIST'teki tüm hisseleri almak için bir liste oluştur
-    # bist_tickers = []
-
-    # # Yahoo Finance'dan tüm BIST hisse senetlerinin sembollerini al
-    # tickers = yf.Tickers("BIST")
-    # for ticker in tickers.tickers:
-    #     print(ticker)
-    #     if ".IS" in ticker:
-    #         bist_tickers.append(ticker),
-        
     for ticker in bist_tickers:
-            ticker = ticker + ".IS"
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            
-            print(f"Fetching data for {ticker}...")
-            data = {field: info.get(yfinance_key) for field, yfinance_key in data_fields.items()}
-            data['ticker'] = ticker
+        ticker = ticker + ".IS"
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        print(f"Fetching data for {ticker}...")
+        data = {field: info.get(yfinance_key) for field, yfinance_key in data_fields.items()}
+        data['ticker'] = ticker
 
-            insert_or_update_stock_data(ticker, data)
-
+        insert_or_update_stock_data(ticker, data)
 
 # Veritabanını başlat
 init_db()

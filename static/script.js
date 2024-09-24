@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', function() {
             min: document.getElementById('pdDdPuanMin'),
             max: document.getElementById('pdDdPuanMax'),
             range: { min: 1, max: 100 }
+        },
+        { 
+            slider: document.getElementById('fkOraniSlider'),
+            min: document.getElementById('fkOraniMin'),
+            max: document.getElementById('fkOraniMax'),
+            range: { min: 0, max: 100 }
         }
     ];
 
@@ -62,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dataTable.destroy();
         }
 
-        const priorityColumns = ['ticker', 'fiyat', 'defter_deger', 'fiyat_puan', 'pd_dd_puan', 'dusuk52', 'yuksek52', 'ort50', 'ort200', 'hacim10gun', 'hacim3ay'];
+        const priorityColumns = ['ticker', 'fiyat', 'defter_deger', 'fiyat_puan', 'pd_dd_puan', 'fk_orani', 'dusuk52', 'yuksek52', 'ort50', 'ort200', 'hacim10gun', 'hacim3ay'];
         const reorderedColumns = [
             ...priorityColumns.filter(col => data.columns.includes(col)),
             ...data.columns.filter(col => !priorityColumns.includes(col))
@@ -93,6 +99,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         const value = parseFloat(data);
                         if (!isNaN(value)) {
                             const color = getColorForValue(value);
+                            return `<span style="color: ${color}">${value.toFixed(2)}</span>`;
+                        }
+                    } else if (column === 'fk_orani') {
+                        const value = parseFloat(data);
+                        if (!isNaN(value)) {
+                            const color = getColorForValue(100 - value); // Düşük F/K oranı daha iyi olduğu için renk skalasını tersine çeviriyoruz
                             return `<span style="color: ${color}">${value.toFixed(2)}</span>`;
                         }
                     }
@@ -137,7 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const filters = {
             hisse_adet: sliders[0].slider.noUiSlider.get().join(','),
             fiyat_puan: sliders[1].slider.noUiSlider.get().join(','),
-            pd_dd_puan: sliders[2].slider.noUiSlider.get().join(',')
+            pd_dd_puan: sliders[2].slider.noUiSlider.get().join(','),
+            fk_orani: sliders[3].slider.noUiSlider.get().join(',')
         };
         
         fetch('/filter', {
